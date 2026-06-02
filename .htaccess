@@ -1,0 +1,17 @@
+RewriteEngine On
+
+# IMPORTANT: set your folder name
+RewriteBase /bpcl_dsrs/
+
+# 1) If someone visits /file.php -> redirect to /file (clean)
+RewriteCond %{THE_REQUEST} \s/+bpcl_dsrs/([^\s?]+)\.php[\s?] [NC]
+RewriteRule ^ %1 [R=301,L]
+
+# 2) Serve existing files/folders normally
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# 3) If /something is requested, internally load /something.php if it exists
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^(.+?)/?$ $1.php [L]

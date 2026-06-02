@@ -1,0 +1,116 @@
+<?php
+// helpers/report_mailer.php
+require_once __DIR__ . '/report_mailer_config.php';
+
+$autoloadCandidates = [
+  __DIR__ . '/../vendor/autoload.php',
+  __DIR__ . '/../../vendor/autoload.php',
+  dirname(__DIR__) . '/vendor/autoload.php'
+];
+
+$autoload = null;
+foreach ($autoloadCandidates as $p) { if (is_file($p)) { $autoload = $p; break; } }
+if (!$autoload) {
+  return; // avoid fatal if used elsewhere; caller should handle
+}
+require_once $autoload;
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+/**
+ * Send email with DOCX attachment
+ * Args:
+ *  - to (string) required
+ *  - subject (string) required
+ *  - bodyText (string) optional
+ *  - bodyHtml (string) optional (recommended)
+ *  - attachmentPath (string) required
+ *  - attachmentName (string) optional
+ *  - replyTo (string) optional
+ *  - replyToName (string) optional
+ */
+function send_report_email_with_attachment(array $args): array {
+  $to = trim((string)($args['to'] ?? ''));
+  $subject = (string)($args['subject'] ?? '');
+  $bodyText = (string)($args['bodyText'] ?? '');
+  $bodyHtml = (string)($args['bodyHtml'] ?? '');
+  $attachmentPath = (string)($args['attachmentPath'] ?? '');
+  $attachmentName = (string)($args['attachmentName'] ?? '');
+  $replyTo = trim((string)($args['replyTo'] ?? ''));
+  $replyToName = (string)($args['replyToName'] ?? '');
+
+  if ($to === '' || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
+    return ['ok' => false, 'error' => 'Invalid recipient email.'];
+  }
+  if ($subject === '') $subject = 'Assessment Report';
+  if ($attachmentPath === '' || !is_file($attachmentPath)) {
+    return ['ok' => false, 'error' => 'Attachment missing.'];
+  }
+
+  // If HTML not provided, generate safe HTML from text (preserve newlines)
+  if ($bodyHtml === '') {
+    $safe = htmlspecialchars($bodyText === '' ? 'Please find the attached assessment report.' : $bodyText, ENT_QUOTES, 'UTF-8');
+    $bodyHtml = nl2br($safe, false);
+  }
+  if ($bodyText === '') {
+    // If text not provided, generate text version from html (best effort)
+    $bodyText = trim(html_entity_decode(strip_tags(str_replace(['<br>','<br/>','<br />'], "\n", $bodyHtml)), ENT_QUOTES, 'UTF-8'));
+  }
+
+  $mail = new PHPMailer(true);
+
+  try {
+    $mail->CharSet  = 'UTF-8';
+    $mail->Encoding = 'base64';
+
+    $mail->isSMTP();
+    $mail->Host       = REPORT_SMTP_HOST;
+    $mail->SMTPAuth   = true;
+    $mail->Username   = REPORT_SMTP_USER;
+    $mail->Password   = defined('REPORT_SMTP_PASS') ? REPORT_SMTP_PASS : ''; // you said you won't store in memory; keep in config file
+    $mail->Port       = REPORT_SMTP_PORT;
+    $mail->SMTPSecure = REPORT_SMTP_SECURE;
+
+    // IMPORTANT for Gmail deliverability:
+    // From MUST match the authenticated account (REPORT_SMTP_USER) OR be a verified "Send mail as" alias in Gmail.
+    $from = defined('REPORT_MAIL_FROM') ? REPORT_MAIL_FROM : REPORT_SMTP_USER;
+    $fromName = defined('REPORT_MAIL_FROM_NAME') ? REPORT_MAIL_FROM_NAME : 'Report';
+
+    $mail->setFrom($from, $fromName);
+
+    // Reply-To (optional)
+    if ($replyTo !== '' && filter_var($replyTo, FILTER_VALIDATE_EMAIL)) {
+      $mail->addReplyTo($replyTo, $replyToName ?: $fromName);
+    } else {
+      // Default Reply-To to From (clean)
+      $mail->addReplyTo($from, $fromName);
+    }
+
+    $mail->addAddress($to);
+
+    // Clean, non-spammy headers
+    $mail->addCustomHeader('X-Mailer', 'BPCL-DSRS');
+    $mail->addCustomHeader('X-Report-Type', 'ADHD-Assessment');
+
+    $mail->Subject = $subject;
+
+    // HTML + text
+    $mail->isHTML(true);
+    $mail->Body    = $bodyHtml;
+    $mail->AltBody = $bodyText;
+
+    // Attachment
+    if ($attachmentName !== '') {
+      $mail->addAttachment($attachmentPath, $attachmentName);
+    } else {
+      $mail->addAttachment($attachmentPath);
+    }
+
+    // Send
+    $mail->send();
+    return ['ok' => true];
+  } catch (Throwable $e) {
+    return ['ok' => false, 'error' => $e->getMessage()];
+  }
+}

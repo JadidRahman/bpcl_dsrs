@@ -1,0 +1,16 @@
+{
+  "name": "bpcl_dsrs",
+  "version": "1.0.0",
+  "description": "This is a ready-to-paste starter for **BPCL Digital Scale & Report System (DSRS)** (Phase-1: ADHD).",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "puppeteer": "^24.37.5"
+  }
+}

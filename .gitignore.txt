@@ -1,0 +1,32 @@
+# Secrets / environment
+.env
+config.local.php
+mail_config.php
+smtp_config.php
+database.php
+
+# Upload/user files
+uploads/
+assets/uploads/
+public/uploads/
+
+# Dependencies
+vendor/
+node_modules/
+
+# Logs/cache
+*.log
+cache/
+tmp/
+
+# Editor/system
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Backups
+*.zip
+*.rar
+*.bak
+*.sql
