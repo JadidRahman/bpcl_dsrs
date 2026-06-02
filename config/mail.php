@@ -1,10 +1,11 @@
 <?php
+
 return [
-  'host' => 'smtp.gmail.com',
-  'port' => 587,
-  'secure' => 'tls',
-  'username' => 'bpcljadidrahman@gmail.com',
-  'password' => 'livikzsuziqpkkmq', // 16-char app password
-  'from_email' => 'bpcljadidrahman@gmail.com',
-  'from_name' => 'BPCL DSRS',
+    'host' => 'smtp.example.com',
+    'username' => 'your_email@example.com',
+    'password' => 'your_smtp_password',
+    'port' => 587,
+    'secure' => 'tls',
+    'from_email' => 'your_email@example.com',
+    'from_name' => 'BPCL DSRS',
 ];
